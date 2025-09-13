@@ -44,20 +44,32 @@ print(train.shape, train_labels.shape)
 print(train_labels.head())  # date_id index column
 
 # train model
-lin = Ridge()
-param_distribution = {"alpha": np.logspace(-4, 0, num=10)}
+lin = Ridge(fit_intercept=True)
+param_distribution = {"alpha": np.logspace(0, 4, num=4)}
 print(param_distribution)
-clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
+clf = RandomizedSearchCV(
+    lin, 
+    param_distribution, 
+    random_state=0
+)
 
 X = train.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
 Y = train_labels.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
 search = clf.fit(X, Y)
+
+cv_res = clf.cv_results_
+print(cv_res)
+print("Mean test score :", cv_res["mean_test_score"])
+# best_score_clf = clf.best_score_
+# print("Search best score :", best_score_search)
+
 alpha = search.best_params_["alpha"]
 print(X.shape, Y.shape)
 print("Best regularisation parameter :", alpha)
 lin = Ridge(alpha=alpha)
 lin.fit(X, Y)
-
+Y_hat = lin.predict(X)
+print(Y.shape, Y_hat.shape)
 
 def predict(
     test: pl.DataFrame,
@@ -72,6 +84,7 @@ def predict(
     """
     if len(test) == 0:
         # default prediction
+        
         predictions = pl.DataFrame(
             {f"target_{i}": i / 1000 for i in range(NUM_TARGET_COLUMNS)}
         )
