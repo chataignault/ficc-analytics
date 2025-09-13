@@ -15,32 +15,45 @@ Your code will always have access to the published copies of the competition fil
 """
 
 import os
-
+import numpy as np
 import pandas as pd
 import polars as pl
-from sklearn.linear_model import LinearRegression, Ridge
-# from sklearn.ensemble import RandomForestRegressor
-import copy 
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import RandomizedSearchCV
 
 import kaggle_evaluation.mitsui_inference_server
 
-print(os.listdir(os.path.join(os.getcwd(), "..", "input", "mitsui-commodity-prediction-challenge")))
+print(
+    os.listdir(
+        os.path.join(
+            os.getcwd(), "..", "input", "mitsui-commodity-prediction-challenge"
+        )
+    )
+)
 
 NUM_TARGET_COLUMNS = 424
 
 train = pl.read_csv("/kaggle/input/mitsui-commodity-prediction-challenge/train.csv")
-train_labels = pl.read_csv("/kaggle/input/mitsui-commodity-prediction-challenge/train_labels.csv")
+train_labels = pl.read_csv(
+    "/kaggle/input/mitsui-commodity-prediction-challenge/train_labels.csv"
+)
 
 print(train.shape, train_labels.shape)
-print(train_labels.head()) # date_id index column
+print(train_labels.head())  # date_id index column
 
 # train model
-lin = LinearRegression()
-lin = Ridge(alpha=.1)
+lin = Ridge()
+param_distribution = {"alpha": np.logspace(-4, 0, num=10)}
+print(param_distribution)
+clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
 
-X = train.fill_null(0.).select(pl.exclude("date_id")).to_numpy()
-Y = train_labels.fill_null(0.).select(pl.exclude("date_id")).to_numpy()
+X = train.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
+Y = train_labels.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
+search = clf.fit()
+alpha = search.best_params_["alpha"]
 print(X.shape, Y.shape)
+print("Best regularisation parameter :", alpha)
+lin = Ridge(alpha=alpha)
 lin.fit(X, Y)
 
 
@@ -57,14 +70,18 @@ def predict(
     """
     if len(test) == 0:
         # default prediction
-        predictions = pl.DataFrame({f'target_{i}': i / 1000 for i in range(NUM_TARGET_COLUMNS)})
+        predictions = pl.DataFrame(
+            {f"target_{i}": i / 1000 for i in range(NUM_TARGET_COLUMNS)}
+        )
     else:
         # predict with the linear regression
-        x = test.fill_null(0.).select(pl.exclude(["date_id", "is_scored"])).to_numpy()
-        x[x == None] = 0.
+        x = test.fill_null(0.0).select(pl.exclude(["date_id", "is_scored"])).to_numpy()
+        x[x == None] = 0.0
         x = x.astype(float)
         pred = lin.predict(x)
-        predictions = pl.DataFrame({f'target_{i}': pred[0][i] for i in range(NUM_TARGET_COLUMNS)})
+        predictions = pl.DataFrame(
+            {f"target_{i}": pred[0][i] for i in range(NUM_TARGET_COLUMNS)}
+        )
 
     assert isinstance(predictions, (pd.DataFrame, pl.DataFrame))
     assert len(predictions) == 1
@@ -74,9 +91,13 @@ def predict(
 # When your notebook is run on the hidden test set, inference_server.serve must be called within 15 minutes of the notebook starting
 # or the gateway will throw an error. If you need more than 15 minutes to load your model you can do so during the very
 # first `predict` call, which does not have the usual 1 minute response deadline.
-inference_server = kaggle_evaluation.mitsui_inference_server.MitsuiInferenceServer(predict)
+inference_server = kaggle_evaluation.mitsui_inference_server.MitsuiInferenceServer(
+    predict
+)
 
-if os.getenv('KAGGLE_IS_COMPETITION_RERUN'):
+if os.getenv("KAGGLE_IS_COMPETITION_RERUN"):
     inference_server.serve()
 else:
-    inference_server.run_local_gateway(('/kaggle/input/mitsui-commodity-prediction-challenge/',))
+    inference_server.run_local_gateway(
+        ("/kaggle/input/mitsui-commodity-prediction-challenge/",)
+    )
