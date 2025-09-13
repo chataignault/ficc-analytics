@@ -1,5 +1,7 @@
 # %% [code]
 # %% [code]
+# %% [code]
+# %% [code]
 # # %% [bash]
 
 # !pip install scikit-learn
@@ -49,7 +51,7 @@ clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
 
 X = train.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
 Y = train_labels.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
-search = clf.fit()
+search = clf.fit(X, Y)
 alpha = search.best_params_["alpha"]
 print(X.shape, Y.shape)
 print("Best regularisation parameter :", alpha)
