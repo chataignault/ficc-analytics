@@ -36,6 +36,7 @@ kaggle = [
     "grpcio>=1.74.0",
 ]
 temp = [
+    "duckdb>=1.3.2",
     "pandas-datareader>=0.10.0",
     "scikit-network>=0.33.3",
 ]
