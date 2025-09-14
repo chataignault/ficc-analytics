@@ -1,5 +1,66 @@
 # %% [code]
 
+import os
+import numpy as np
+import pandas as pd
+import polars as pl
+from sklearn.linear_model import Ridge, LinearRegression
+from sklearn.model_selection import RandomizedSearchCV
+
+from kaggle_evaluation.core.base_gateway import GatewayRuntimeError
+import kaggle_evaluation.mitsui_inference_server
+
+
+# %%
+SOLUTION_NULL_FILLER = -999999
+
+
+def rank_correlation_sharpe_ratio(merged_df: pd.DataFrame) -> float:
+    """
+    Calculates the rank correlation between predictions and target values,
+    and returns its Sharpe ratio (mean / standard deviation).
+
+    :param merged_df: DataFrame containing prediction columns (starting with 'prediction_')
+                      and target columns (starting with 'target_')
+    :return: Sharpe ratio of the rank correlation
+    :raises ZeroDivisionError: If the standard deviation is zero
+    """
+    prediction_cols = [col for col in merged_df.columns if col.startswith('prediction_')]
+    target_cols = [col for col in merged_df.columns if col.startswith('target_')]
+
+    def _compute_rank_correlation(row):
+        non_null_targets = [col for col in target_cols if not pd.isnull(row[col])]
+        matching_predictions = [col for col in prediction_cols if col.replace('prediction', 'target') in non_null_targets]
+        if not non_null_targets:
+            raise ValueError('No non-null target values found')
+        if row[non_null_targets].std(ddof=0) == 0 or row[matching_predictions].std(ddof=0) == 0:
+            raise ZeroDivisionError('Denominator is zero, unable to compute rank correlation.')
+        return np.corrcoef(row[matching_predictions].rank(method='average'), row[non_null_targets].rank(method='average'))[0, 1]
+
+    daily_rank_corrs = merged_df.apply(_compute_rank_correlation, axis=1)
+    std_dev = daily_rank_corrs.std(ddof=0)
+    if std_dev == 0:
+        raise ZeroDivisionError('Denominator is zero, unable to compute Sharpe ratio.')
+    sharpe_ratio = daily_rank_corrs.mean() / std_dev
+    return float(sharpe_ratio)
+
+
+def score(solution: pd.DataFrame, submission: pd.DataFrame, row_id_column_name: str) -> float:
+    """
+    Calculates the rank correlation between predictions and target values,
+    and returns its Sharpe ratio (mean / standard deviation).
+    """
+    del solution[row_id_column_name]
+    del submission[row_id_column_name]
+    assert all(solution.columns == submission.columns)
+
+    submission = submission.rename(columns={col: col.replace('target_', 'prediction_') for col in submission.columns})
+
+    # Not all securities trade on all dates, but solution files cannot contain nulls.
+    # The filler value allows us to handle trading halts, holidays, & delistings.
+    solution = solution.replace(SOLUTION_NULL_FILLER, None)
+    return rank_correlation_sharpe_ratio(pd.concat([solution, submission], axis='columns'))
+
 # %% [code]
 """
 The evaluation API requires that you set up a server which will respond to inference requests.
@@ -9,17 +70,6 @@ with direct access to the hidden test set and hand off the data timestep by time
 
 Your code will always have access to the published copies of the competition files.
 """
-
-import os
-import time
-import numpy as np
-import pandas as pd
-import polars as pl
-from sklearn.linear_model import Ridge
-from sklearn.model_selection import RandomizedSearchCV
-
-from kaggle_evaluation.core.base_gateway import GatewayRuntimeError
-import kaggle_evaluation.mitsui_inference_server
 
 
 NUM_TARGET_COLUMNS = 424
@@ -39,12 +89,17 @@ print(train_labels.head())  # date_id index column
 
 # train model
 lin = Ridge()
-param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
-print(param_distribution)
-clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
+lin = LinearRegression()
+# param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
+# print(param_distribution)
+# clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
 
-X = train.select(pl.exclude("date_id").forward_fill().backward_fill()).to_numpy()
-Y = train_labels.select(pl.exclude("date_id").forward_fill().backward_fill()).to_numpy()
+
+train_processed = train.select(pl.exclude("date_id").forward_fill().backward_fill())
+train_labels_processed = train_labels.select(pl.exclude("date_id").forward_fill().backward_fill())
+
+X = train_processed.to_numpy()
+Y = train_labels_processed.to_numpy()
 
 
 mu = np.mean(X, axis=0)
@@ -52,11 +107,11 @@ std = np.std(X, axis=0)
 
 X_std = (X - mu) / std
 
-search = clf.fit(X_std, Y)
-alpha = search.best_params_["alpha"]
-print(X.shape, Y.shape)
-print("Best regularisation parameter :", alpha)
-lin = Ridge(alpha=alpha)
+# search = clf.fit(X_std, Y)
+# alpha = search.best_params_["alpha"]
+# print(X.shape, Y.shape)
+# print("Best regularisation parameter :", alpha)
+# lin = Ridge(alpha=alpha)
 lin.fit(X_std, Y)
 
 
@@ -65,8 +120,11 @@ Y_hat = lin.predict(X_std)
 mse = np.linalg.norm(Y - Y_hat) / len(Y)
 r2 = 1 - np.var(Y - Y_hat) / np.var(Y)
 
+spearman_sharpe = score(train_labels.to_pandas(), pd.read_parquet("submission.parquet"), "date_id")
+
 print("Train MSE :", mse)
 print("Train R2 :", r2)
+print("Train Spearman Sharpe :", spearman_sharpe)
 
 def predict(
     test: pl.DataFrame,
@@ -137,3 +195,4 @@ try:
     print(submission)
 except FileNotFoundError:
     print("Submission file not found")
+
