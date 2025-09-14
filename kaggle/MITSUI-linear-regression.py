@@ -89,6 +89,8 @@ def predict(
         x = test.fill_null(0.0).select(pl.exclude(["date_id", "is_scored"])).to_numpy()
         x[x == None] = 0.0
         x = x.astype(float)
+        x = x - mu
+        x = x / std
         pred = lin.predict(x)
         predictions = pl.DataFrame(
             {f"target_{i}": pred[0][i] for i in range(NUM_TARGET_COLUMNS)}
