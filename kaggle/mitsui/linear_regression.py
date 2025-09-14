@@ -1,4 +1,5 @@
 # %% [code]
+# %% [code]
 
 import os
 import numpy as np
@@ -115,17 +116,6 @@ X_std = (X - mu) / std
 lin.fit(X_std, Y)
 
 
-# train score
-Y_hat = lin.predict(X_std)
-mse = np.linalg.norm(Y - Y_hat) / len(Y)
-r2 = 1 - np.var(Y - Y_hat) / np.var(Y)
-
-spearman_sharpe = score(train_labels.to_pandas(), pd.read_parquet("submission.parquet"), "date_id")
-
-print("Train MSE :", mse)
-print("Train R2 :", r2)
-print("Train Spearman Sharpe :", spearman_sharpe)
-
 def predict(
     test: pl.DataFrame,
     label_lags_1_batch: pl.DataFrame,
@@ -194,5 +184,16 @@ try:
     submission = pd.read_parquet("submission.parquet")
     print(submission)
 except FileNotFoundError:
-    print("Submission file not found")
+    submission = pd.read_parquet("/output/submission.parquet")
+finally:
+    # train score
+    Y_hat = lin.predict(X_std)
+    mse = np.linalg.norm(Y - Y_hat) / len(Y)
+    r2 = 1 - np.var(Y - Y_hat) / np.var(Y)
+    
+    spearman_sharpe = score(train_labels.to_pandas(), pd.read_parquet("submission.parquet"), "date_id")
+    
+    print("Train MSE :", mse)
+    print("Train R2 :", r2)
+    print("Train Spearman Sharpe :", spearman_sharpe)
 
