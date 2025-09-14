@@ -19,6 +19,7 @@ dependencies = [
     "setuptools>=80.9.0",
     "statsmodels>=0.14.5",
     "uvicorn>=0.34.0",
+    "xgboost>=3.0.5",
     "yfinance>=0.2.51",
 ]
 
