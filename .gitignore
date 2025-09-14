@@ -1,21 +1,28 @@
-__pycache__/
-.vscode
+
+# data formats
 *.csv
 *.txt
-*.pyc
-*.ipynb
-*.lock 
 *.parquet
 *.npy
 
-.todos
+# config
+.vscode
+*.lock 
+
+# temp folders
 target
 draft 
 raw_data
+
+# cache
+__pycache__
+.todos
+*.pyc
 
 # kaggle competition subfolders :
 # in kaggle/ folder, use API do download local copy of competition to work in VSCODE
 # list projects below
 # git add --force for submission notebooks
 kaggle/mitsui
+kaggle/drw
 
