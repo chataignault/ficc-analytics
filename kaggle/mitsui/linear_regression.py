@@ -42,15 +42,30 @@ param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
 print(param_distribution)
 clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
 
-X = train.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
-Y = train_labels.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
-search = clf.fit(X, Y)
+X = train.select(pl.exclude("date_id").forward_fill().backward_fill()).to_numpy()
+Y = train_labels.select(pl.exclude("date_id").forward_fill().backward_fill()).to_numpy()
+
+
+mu = np.mean(X, axis=0)
+std = np.std(X, axis=0)
+
+X_std = (X - mu) / std
+
+search = clf.fit(X_std, Y)
 alpha = search.best_params_["alpha"]
 print(X.shape, Y.shape)
 print("Best regularisation parameter :", alpha)
 lin = Ridge(alpha=alpha)
-lin.fit(X, Y)
+lin.fit(X_std, Y)
 
+
+# train score
+Y_hat = lin.predict(X_std)
+mse = np.linalg.norm(Y - Y_hat) / len(Y)
+r2 = 1 - np.var(Y - Y_hat) / np.var(Y)
+
+print("Train MSE :", mse)
+print("Train R2 :", r2)
 
 def predict(
     test: pl.DataFrame,
@@ -91,23 +106,31 @@ inference_server = kaggle_evaluation.mitsui_inference_server.MitsuiInferenceServ
 )
 
 # server is the configured grpc server object.
-
+# debug gRPC server 
 for service in inference_server.server._state.generic_handlers:
     print("Service Name:", service.service_name())
     for method in service._method_handlers:
         print(4*" " + method)
+
+# run the server gateway
 if os.getenv("KAGGLE_IS_COMPETITION_RERUN"):
     inference_server.serve()
 else:
-    try:
-        inference_server.server.stop(0)
-        inference_server.run_local_gateway(
-            ("/kaggle/input/mitsui-commodity-prediction-challenge/",)
-        )
-    except GatewayRuntimeError:
-        time.wait(5)
-        print("Run local gateway")
-        inference_server.server.stop(0)
+    if os.path.exists("/kaggle"):
+        try:
+            inference_server.run_local_gateway(
+                ("/kaggle/input/mitsui-commodity-prediction-challenge/",)
+            )
+        except GatewayRuntimeError as e:
+            print(f"{e}")
+    else:
         inference_server.run_local_gateway(
             (".",)
         )
+
+# %% estimate local train score
+try:
+    submission = pd.read_parquet("submission.parquet")
+    print(submission)
+except FileNotFoundError:
+    print("Submission file not found")
