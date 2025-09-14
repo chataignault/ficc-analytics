@@ -1,10 +1,3 @@
-# %% [code]
-# %% [code]
-# %% [code]
-# %% [code]
-# # %% [bash]
-
-# !pip install scikit-learn
 
 # %% [code]
 """
@@ -17,59 +10,47 @@ Your code will always have access to the published copies of the competition fil
 """
 
 import os
+import time
 import numpy as np
 import pandas as pd
 import polars as pl
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import RandomizedSearchCV
 
+from kaggle_evaluation.core.base_gateway import GatewayRuntimeError
 import kaggle_evaluation.mitsui_inference_server
 
-print(
-    os.listdir(
-        os.path.join(
-            os.getcwd(), "..", "input", "mitsui-commodity-prediction-challenge"
-        )
-    )
-)
 
 NUM_TARGET_COLUMNS = 424
 
-train = pl.read_csv("/kaggle/input/mitsui-commodity-prediction-challenge/train.csv")
-train_labels = pl.read_csv(
-    "/kaggle/input/mitsui-commodity-prediction-challenge/train_labels.csv"
-)
+try:
+    train = pl.read_csv("/kaggle/input/mitsui-commodity-prediction-challenge/train.csv")
+    train_labels = pl.read_csv(
+        "/kaggle/input/mitsui-commodity-prediction-challenge/train_labels.csv"
+    )
+except FileNotFoundError:
+    print("Import train dataset from current directory")
+    train = pl.read_csv("train.csv")
+    train_labels = pl.read_csv("train_labels.csv")
 
 print(train.shape, train_labels.shape)
 print(train_labels.head())  # date_id index column
 
 # train model
-lin = Ridge(fit_intercept=True)
-param_distribution = {"alpha": np.logspace(0, 4, num=4)}
+lin = Ridge()
+param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
 print(param_distribution)
-clf = RandomizedSearchCV(
-    lin, 
-    param_distribution, 
-    random_state=0
-)
+clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
 
 X = train.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
 Y = train_labels.fill_null(0.0).select(pl.exclude("date_id")).to_numpy()
 search = clf.fit(X, Y)
-
-cv_res = clf.cv_results_
-print(cv_res)
-print("Mean test score :", cv_res["mean_test_score"])
-# best_score_clf = clf.best_score_
-# print("Search best score :", best_score_search)
-
 alpha = search.best_params_["alpha"]
 print(X.shape, Y.shape)
 print("Best regularisation parameter :", alpha)
 lin = Ridge(alpha=alpha)
 lin.fit(X, Y)
-Y_hat = lin.predict(X)
-print(Y.shape, Y_hat.shape)
+
 
 def predict(
     test: pl.DataFrame,
@@ -84,7 +65,6 @@ def predict(
     """
     if len(test) == 0:
         # default prediction
-        
         predictions = pl.DataFrame(
             {f"target_{i}": i / 1000 for i in range(NUM_TARGET_COLUMNS)}
         )
@@ -110,9 +90,24 @@ inference_server = kaggle_evaluation.mitsui_inference_server.MitsuiInferenceServ
     predict
 )
 
+# server is the configured grpc server object.
+
+for service in inference_server.server._state.generic_handlers:
+    print("Service Name:", service.service_name())
+    for method in service._method_handlers:
+        print(4*" " + method)
 if os.getenv("KAGGLE_IS_COMPETITION_RERUN"):
     inference_server.serve()
 else:
-    inference_server.run_local_gateway(
-        ("/kaggle/input/mitsui-commodity-prediction-challenge/",)
-    )
+    try:
+        inference_server.server.stop(0)
+        inference_server.run_local_gateway(
+            ("/kaggle/input/mitsui-commodity-prediction-challenge/",)
+        )
+    except GatewayRuntimeError:
+        time.wait(5)
+        print("Run local gateway")
+        inference_server.server.stop(0)
+        inference_server.run_local_gateway(
+            (".",)
+        )
