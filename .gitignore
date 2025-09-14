@@ -13,3 +13,9 @@ target
 draft 
 raw_data
 
+# kaggle competition subfolders :
+# in kaggle/ folder, use API do download local copy of competition to work in VSCODE
+# list projects below
+# git add --force for submission notebooks
+kaggle/mitsui
+
