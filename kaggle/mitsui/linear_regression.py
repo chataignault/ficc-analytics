@@ -1,5 +1,6 @@
 # %% [code]
 # %% [code]
+# %% [code]
 
 import os
 import numpy as np
@@ -135,7 +136,7 @@ def predict(
     else:
         # predict with the linear regression
         x = test.fill_null(0.0).select(pl.exclude(["date_id", "is_scored"])).to_numpy()
-        x[x == None] = 0.0
+        x[x == None] = np.array([mu])[x == None]
         x = x.astype(float)
         x = x - mu
         x = x / std
@@ -196,4 +197,4 @@ finally:
     print("Train MSE :", mse)
     print("Train R2 :", r2)
     print("Train Spearman Sharpe :", spearman_sharpe)
-
+    
