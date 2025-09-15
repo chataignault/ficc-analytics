@@ -1,18 +1,17 @@
 # Fixed Income backend and analytics
 
 With public data related to rates, macro, commodities and crypto, 
-the aim is get systematic trading practice from end-to-end of the pipeline.
+the project aims to approach systematic trading practices 
+from data ingestion to data analytics.
 
-As such, the project is a POC involving statistics, dev and data science \& engineering.
 
 ### Guidelines
-- API best practices,
-- Well-defined services,
-- Accountable and safe data processing,
-- Quantified analytics,
+- Well-defined services with reproducible environments,
+- Accountable and safe data processing from different sources,
+- Quantified analytics, model comparisons,
 
 ### Techniques
-- REST API,
+- REST or gRPC API
 - Data Lake / Lake House architecture `to be decided`,
 - Containerisation with `podman`,
 - Managing Python dependencies with `uv`, integrating Rust code,
@@ -20,6 +19,7 @@ As such, the project is a POC involving statistics, dev and data science \& engi
 
 ### Algos
 - Tabular and time-series off-the-shelf ML,
+    -  `sklearn`
 - Market mode modelisation
 
 ### Objective structure
@@ -30,6 +30,7 @@ As such, the project is a POC involving statistics, dev and data science \& engi
 ## Data
 Challenge to unify data from different sources,
 with different tick frequencies, noise levels and structure. 
+
 - Ingestion pipeline (ETL)
 to gather each endpoint (treated individually). 
     - manage exceptions without failing,
@@ -40,7 +41,7 @@ to gather each endpoint (treated individually).
 - https://datafusion.apache.org/
 - https://iceberg.apache.org/
 - https://github.com/delta-io/delta-rs?tab=readme-ov-file
-- test `duckdb` and `ducklake` to get started : serverless, little configuration
+- test `duckdb` and `ducklake` to get started : serverless, little configuration : https://duckdb.org/2025/05/27/ducklake.html
 - *external :* https://www.databricks.com/ 
 
 
@@ -66,7 +67,7 @@ Is a [Kaggle competition](https://www.kaggle.com/competitions/drw-crypto-market-
 where the objective is Pearson's correlation coefficient.
 
 ## Models
-
+- XGBoost Regressor fine-tuning,
 - MacMahon, Mel, and Diego Garlaschelli. "Community detection for correlation matrices." arXiv preprint arXiv:1311.1924 (2013).
 
 ## Project structure
@@ -74,9 +75,8 @@ where the objective is Pearson's correlation coefficient.
 ```bash
 ├── draft
 ├── img
-├── kaggle
-├── notebooks              # curated notebooks to present features or use-cases
-├── podman-test-harlequin
+├── kaggle                 # kaggle submission notebooks
+├── podman_images
 ├── raw_data
 │   ├── commo
 │   └── crypto

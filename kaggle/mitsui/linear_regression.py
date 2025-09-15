@@ -8,7 +8,7 @@ import pandas as pd
 import polars as pl
 from sklearn.linear_model import Ridge, LinearRegression
 from sklearn.model_selection import RandomizedSearchCV
-
+from sklearn.ensemble import RandomForestRegressor
 from kaggle_evaluation.core.base_gateway import GatewayRuntimeError
 import kaggle_evaluation.mitsui_inference_server
 
@@ -109,13 +109,41 @@ std = np.std(X, axis=0)
 
 X_std = (X - mu) / std
 
+# %% add the lagged targets to the dataset , and zeros where note available
+Y_lag_1 = np.concatenate(
+    [
+        np.zeros((1, NUM_TARGET_COLUMNS)),
+        Y[:-1]
+    ]
+)
+print(Y_lag_1.shape, X_std.shape)
+print(Y_lag_1[:5, :5])
+
+X_std = np.concatenate(
+    [
+        X_std,
+        Y_lag_1
+    ],
+    axis=1
+)
+print(X_std.shape)
+
+# %%
+
 # search = clf.fit(X_std, Y)
 # alpha = search.best_params_["alpha"]
 # print(X.shape, Y.shape)
 # print("Best regularisation parameter :", alpha)
 # lin = Ridge(alpha=alpha)
 lin.fit(X_std, Y)
+# Y_res = Y - lin.predict(X_std)
 
+# tr = RandomForestRegressor(
+#     criterion="friedman_mse",
+#     # learning_rate=.1,
+#     n_estimators=60
+# )
+# tr.fit(X_std, Y_res)
 
 def predict(
     test: pl.DataFrame,
@@ -128,6 +156,15 @@ def predict(
     You can return either a Pandas or Polars dataframe, though Polars is recommended for performance.
     Each batch of predictions (except the very first) must be returned within 5 minutes of the batch features being provided.
     """
+    test_lags = pl.concat(
+        [
+            label_lags_1_batch.drop(["date_id", "label_date_id"]),
+            label_lags_2_batch.drop(["date_id", "label_date_id"]),
+            label_lags_3_batch.drop(["date_id", "label_date_id"]),
+            label_lags_4_batch.drop(["date_id", "label_date_id"]),
+        ],
+        how="horizontal"
+    )
     if len(test) == 0:
         # default prediction
         predictions = pl.DataFrame(
@@ -136,11 +173,22 @@ def predict(
     else:
         # predict with the linear regression
         x = test.fill_null(0.0).select(pl.exclude(["date_id", "is_scored"])).to_numpy()
+        if len(test_lags):
+            y_lagged = test_lags.fill_null(0.).select(pl.exclude(["date_id", "is_scored"])).to_numpy()
+        else:
+            y_lagged = np.zeros((1, test_lags.shape[1]))
         x[x == None] = np.array([mu])[x == None]
         x = x.astype(float)
         x = x - mu
         x = x / std
-        pred = lin.predict(x)
+        x = np.concatenate(
+            [
+                x,
+                y_lagged
+            ],
+            axis=1
+        )
+        pred = lin.predict(x) #+ tr.predict(x)
         predictions = pl.DataFrame(
             {f"target_{i}": pred[0][i] for i in range(NUM_TARGET_COLUMNS)}
         )
@@ -198,3 +246,5 @@ finally:
     print("Train R2 :", r2)
     print("Train Spearman Sharpe :", spearman_sharpe)
     
+
+# %%
