@@ -1,14 +1,18 @@
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+
+# Set working directory
 WORKDIR /app
 
-# Install harlequin
+# Install harlequin 
 RUN uv tool install harlequin
 
-# Copy existing local database
-COPY "house_prices.db" .
+# Copy house prices database
+COPY house_prices.db .
 
-# Run harlequin
+# Set environment variables
 ENV PATH="/root/.local/bin:$PATH"
+
+# Run Harlequin on test database
 CMD ["harlequin", "house_prices.db"]
 
