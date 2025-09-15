@@ -4,6 +4,7 @@
 *.txt
 *.parquet
 *.npy
+*.db 
 
 # config
 .vscode
