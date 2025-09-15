@@ -41,7 +41,7 @@ to gather each endpoint (treated individually).
 - https://datafusion.apache.org/
 - https://iceberg.apache.org/
 - https://github.com/delta-io/delta-rs?tab=readme-ov-file
-- test `duckdb` and `ducklake` to get started : serverless, little configuration
+- test `duckdb` and `ducklake` to get started : serverless, little configuration : https://duckdb.org/2025/05/27/ducklake.html
 - *external :* https://www.databricks.com/ 
 
 
