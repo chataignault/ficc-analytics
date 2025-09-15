@@ -1,7 +1,5 @@
 # %% [code]
 # %% [code]
-# %% [code]
-# %% [code]
 
 import os
 import numpy as np
@@ -91,11 +89,11 @@ print(train.shape, train_labels.shape)
 print(train_labels.head())  # date_id index column
 
 # train model
+# lin = LinearRegression()
 lin = Ridge()
-lin = LinearRegression()
-# param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
-# print(param_distribution)
-# clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
+param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
+print(param_distribution)
+clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
 
 
 train_processed = train.select(pl.exclude("date_id").forward_fill().backward_fill())
@@ -131,20 +129,12 @@ print(X_std.shape)
 
 # %%
 
-# search = clf.fit(X_std, Y)
-# alpha = search.best_params_["alpha"]
-# print(X.shape, Y.shape)
-# print("Best regularisation parameter :", alpha)
-# lin = Ridge(alpha=alpha)
+search = clf.fit(X_std, Y)
+alpha = search.best_params_["alpha"]
+print(X.shape, Y.shape)
+print("Best regularisation parameter :", alpha)
+lin = Ridge(alpha=alpha)
 lin.fit(X_std, Y)
-# Y_res = Y - lin.predict(X_std)
-
-# tr = RandomForestRegressor(
-#     criterion="friedman_mse",
-#     # learning_rate=.1,
-#     n_estimators=60
-# )
-# tr.fit(X_std, Y_res)
 
 def predict(
     test: pl.DataFrame,
