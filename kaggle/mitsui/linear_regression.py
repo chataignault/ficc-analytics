@@ -6,9 +6,8 @@ import os
 import numpy as np
 import pandas as pd
 import polars as pl
-from sklearn.linear_model import Ridge, LinearRegression
+from sklearn.linear_model import Ridge, LinearRegression, Lasso
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.ensemble import RandomForestRegressor
 from kaggle_evaluation.core.base_gateway import GatewayRuntimeError
 import kaggle_evaluation.mitsui_inference_server
 
@@ -92,6 +91,7 @@ print(train_labels.head())  # date_id index column
 # train model
 lin = Ridge()
 lin = LinearRegression()
+lin = Lasso()
 # param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
 # print(param_distribution)
 # clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
@@ -136,14 +136,6 @@ print(X_std.shape)
 # print("Best regularisation parameter :", alpha)
 # lin = Ridge(alpha=alpha)
 lin.fit(X_std, Y)
-# Y_res = Y - lin.predict(X_std)
-
-# tr = RandomForestRegressor(
-#     criterion="friedman_mse",
-#     # learning_rate=.1,
-#     n_estimators=60
-# )
-# tr.fit(X_std, Y_res)
 
 def predict(
     test: pl.DataFrame,
