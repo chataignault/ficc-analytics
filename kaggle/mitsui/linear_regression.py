@@ -1,6 +1,4 @@
 # %% [code]
-# %% [code]
-
 import os
 import numpy as np
 import pandas as pd
@@ -10,6 +8,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from kaggle_evaluation.core.base_gateway import GatewayRuntimeError
 import kaggle_evaluation.mitsui_inference_server
 
+STANDARDIZE = False
 
 # %%
 SOLUTION_NULL_FILLER = -999999
@@ -105,8 +104,10 @@ Y = train_labels_processed.to_numpy()
 mu = np.mean(X, axis=0)
 std = np.std(X, axis=0)
 
-X_std = (X - mu) / std
-
+if STANDARDIZE:
+    X_std = (X - mu) / std
+else:
+    X_std = X
 # %% add the lagged targets to the dataset , and zeros where note available
 Y_lag_1 = np.concatenate(
     [
@@ -169,8 +170,9 @@ def predict(
             y_lagged = np.zeros((1, test_lags.shape[1]))
         x[x == None] = np.array([mu])[x == None]
         x = x.astype(float)
-        x = x - mu
-        x = x / std
+        if STANDARDIZE:
+            x = x - mu
+            x = x / std
         x = np.concatenate(
             [
                 x,
@@ -236,5 +238,3 @@ finally:
     print("Train R2 :", r2)
     print("Train Spearman Sharpe :", spearman_sharpe)
     
-
-# %%
