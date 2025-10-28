@@ -1,38 +1,54 @@
-# Interest Rates backend API and analytics
+# Fixed Income backend and analytics
 
-With public rates or macro data, 
-the objective is to model various target objectives,
-using models of all sorts.
+With public data related to rates, macro, commodities and crypto, 
+the project aims to approach systematic trading practices 
+from data ingestion to data analytics.
 
-It is also a playground to get the gist around dev concepts and tools :
-- REST API best practices
-- Containerisation 
-- Managing dependencies with uv
-- Github workflow for CI
+
+### Guidelines
+- Well-defined services with reproducible environments,
+- Accountable and safe data processing from different sources,
+- Quantified analytics, model comparisons,
+
+### Techniques
+- REST or gRPC API
+- Data Lake / Lake House architecture `to be decided`,
+- Containerisation with `podman`,
+- Managing Python dependencies with `uv`, integrating Rust code,
+- `Github workflow` for CI.
+
+### Algos
+- Tabular and time-series off-the-shelf ML,
+    -  `sklearn`
+- Market mode modelisation
+
+### Objective structure
 
 <img src="img/process_flowchart.png" width="600">
 
 
 ## Data
-Because the idea is to gather data from different sources,
-with, say, different ticking frequencies, qualities and types, 
-the long run objective is to have a clean ingestion pipeline
-that can gather each endpoint, 
-manage exceptions without failing,
-and run in a separate service.
+Challenge to unify data from different sources,
+with different tick frequencies, noise levels and structure. 
 
-Options :
+- Ingestion pipeline (ETL)
+to gather each endpoint (treated individually). 
+    - manage exceptions without failing,
+    - run in a separate service.
+
+### Options :
 - `pandas` / `polars` dataframe for a few datasources only (short term),
 - https://datafusion.apache.org/
 - https://iceberg.apache.org/
 - https://github.com/delta-io/delta-rs?tab=readme-ov-file
+- test `duckdb` and `ducklake` to get started : serverless, little configuration : https://duckdb.org/2025/05/27/ducklake.html
+- *external :* https://www.databricks.com/ 
 
-Preprocessing and cleaning, then addition to or creation of new table.
 
-The objective is to have a standalone rust service that shares a global config 
-to define tables location and name.
-The processing logic can be written in `polars`, 
-while the querying in the tables can be done with `datafusion`.
+One secondary objective is to implement a test rust service 
+with transforming logic written in `polars`, 
+while the querying in the tables can be done with `datafusion`
+and placed in a `delta-lake` table.
 
 > [!WARNING]
 > Converting from native arrow to polars' version of arrow has been a rough-ride
@@ -43,25 +59,39 @@ while the querying in the tables can be done with `datafusion`.
 
 ## Targets
 
-**FR yields**
-As a multivariate time-series prediction.
-
 **Covariance matrix estimation**
 For clustering (in terms of rates, or in terms of days to define market modes).
 
+**Crypto Predictive Variable**
+Is a [Kaggle competition](https://www.kaggle.com/competitions/drw-crypto-market-prediction/data) 
+where the objective is Pearson's correlation coefficient.
+
 ## Models
+- XGBoost Regressor fine-tuning,
+- MacMahon, Mel, and Diego Garlaschelli. "Community detection for correlation matrices." arXiv preprint arXiv:1311.1924 (2013).
 
 ## Project structure
 
 ```bash
-└── src             # containing both services and libraries
-    ├── app         # API entrypoint 
+├── draft
+├── img
+├── kaggle                 # kaggle submission notebooks
+├── podman_images
+├── raw_data
+│   ├── commo
+│   └── crypto
+└── src                     # containing both services and libraries
+    ├── app                 # API entrypoint 
     │   └── routers
-    ├── ingestion   # pre-processing service, tables creation and serving
+    ├── ingestion           # ETL service
     │   └── src
-    ├── models      # model application, training
-    └── utils       # custom functions and model helpers
-        └── test
+    ├── models              # analytics helpers
+    └── utils
+        ├── dataset
+        ├── metrics
+        ├── test
+        └── transforms
+
 ```
 
 **Tools overview :**
@@ -78,7 +108,7 @@ For clustering (in terms of rates, or in terms of days to define market modes).
 
 To start the app, run :
 ```bash
-uvicorn src.irbackend.main:app --reload
+uvicorn src.app.main:app --reload
 ```
 
 To build the image, run :
@@ -99,6 +129,10 @@ Data sources :
 - https://www.kaggle.com/datasets/everget/government-bonds/data
 - https://api.energy-charts.info/
 - https://www.researchgate.net/publication/251231364_FinancialPhraseBank-v10/references
+- https://www.eia.gov/
+- https://www.alphavantage.co/
+- https://pydata.github.io/pandas-datareader/index.html
+- https://developer.yahoo.com/api/ *decomissioned*
 
 ***
 
@@ -107,3 +141,4 @@ Other :
 *(Flowchart from : )*
 
 ![My Skills](https://go-skill-icons.vercel.app/api/icons?i=mermaid)
+

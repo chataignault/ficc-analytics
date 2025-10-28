@@ -41,3 +41,21 @@ async def read_tickers(
         dfx.append(df_t)
     df = pd.concat(dfx, axis=1)
     return df.to_json()
+
+
+@yf_router.get("/history/{ticker}")
+async def read_ticker(
+    ticker: str,
+    start: dt.date = dt.date.today(),
+    end: dt.date = dt.date.today(),
+    save: bool = False,
+):
+    df = pd.DataFrame()
+
+    try:
+        df = read_ticker_(ticker, start, end, save)
+    except BaseException as e:
+        # TODO need proper logging
+        pass
+
+    return df.to_json()

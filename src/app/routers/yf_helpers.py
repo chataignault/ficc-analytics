@@ -20,15 +20,18 @@ def read_ticker_(
     file_name = "_".join(
         [ticker, start.strftime("%Y%m%d"), end.strftime("%Y%m%d"), ".parquet"]
     )
-    print(ticker)
-    ticker = "IRX"
-    file_path = os.path.join(os.getcwd(), "data", file_name)
+    file_path = os.path.join(os.getcwd(), "raw_data", file_name)
     if os.path.exists(file_path):
         logger.info(f"Reading file {file_name}...")
         df = pd.read_parquet(file_name)
     else:
         logger.info(f"Fetch {ticker} data...")
-        df = yf.Ticker(ticker).history(start=start, end=end)
+        t = yf.Ticker(ticker)
+        try:
+            print(t.get_info())
+        except Exception as e:
+            print("Ticker info error")
+        df = t.history(start=start, end=end)
         df = process_ticker_hist(df)
         if save:
             df.to_parquet(file_path)

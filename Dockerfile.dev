@@ -1,0 +1,51 @@
+# VSCode Remote Development Container with Python and SSH
+FROM python:3.11-slim
+
+# Install SSH server and development tools
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    sudo \
+    git \
+    vim \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create SSH directory and configure SSH
+RUN mkdir /var/run/sshd
+RUN echo 'root:password' | chpasswd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Create a non-root user for development
+RUN useradd -m -s /bin/bash dev && \
+    echo 'dev:dev' | chpasswd && \
+    usermod -aG sudo dev
+
+# Set up SSH for the dev user
+RUN mkdir -p /home/dev/.ssh && \
+    chown dev:dev /home/dev/.ssh && \
+    chmod 700 /home/dev/.ssh
+
+# Install Python packages commonly used in development
+RUN pip install --no-cache-dir \
+    pytest \
+    black \
+    flake8 \
+    mypy \
+    requests \
+    jupyter \
+    pandas \
+    numpy \
+    fastapi \
+    uvicorn
+
+# Set working directory
+WORKDIR /workspace
+RUN chown dev:dev /workspace
+
+# Expose SSH port
+EXPOSE 22
+
+# Start SSH service
+CMD ["/usr/sbin/sshd", "-D"]

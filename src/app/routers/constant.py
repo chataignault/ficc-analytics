@@ -6,3 +6,4 @@ class Ticker(str, Enum):
     FVX = "^FVX"
     TNX = "^TNX"
     TYX = "^TYX"
+    DXY = "DX-Y.NYB"
