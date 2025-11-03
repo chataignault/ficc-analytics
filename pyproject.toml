@@ -32,6 +32,14 @@ dev = [
     "rich>=13.9.4",
     "ruff>=0.8.4",
 ]
+
+# Airflow dependencies (uncomment when ready to install)
+# airflow = [
+#     "apache-airflow>=2.8.0",
+#     "apache-airflow-providers-postgres>=5.10.0",
+#     "apache-airflow-providers-http>=4.8.0",
+#     "apache-airflow-providers-sqlite>=3.6.0",
+# ]
 kaggle = [
     "grpcio>=1.74.0",
 ]

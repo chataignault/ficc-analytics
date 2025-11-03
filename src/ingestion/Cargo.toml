@@ -11,4 +11,8 @@ futures = "=0.3.31"
 parquet = { version = "=54.2.1", features = ["arrow"] }
 polars = { version = "=0.46.0", features = ["lazy", "dtype-full", "polars-io", "parquet"] }
 polars-arrow = { version = "=0.46.0", features = ["io_ipc"] }
+polars-core = { version = "0.46.0", features = ["lazy"] }
+polars-lazy = { version = "0.46.0", features = ["cum_agg", "diff", "replace"] }
+polars-ops = { version = "0.46.0", features = ["diff"] }
+polars-plan = { version = "0.46.0", features = ["round_series"] }
 tokio = "1.44.2"
