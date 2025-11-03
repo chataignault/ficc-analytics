@@ -1,16 +1,17 @@
 # %% [code]
 # %% [code]
 # %% [code]
+
 import os
 import numpy as np
 import pandas as pd
 import polars as pl
-from sklearn.linear_model import Ridge, LinearRegression, Lasso
+from sklearn.linear_model import Ridge, LinearRegression
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.ensemble import RandomForestRegressor
 from kaggle_evaluation.core.base_gateway import GatewayRuntimeError
 import kaggle_evaluation.mitsui_inference_server
 
-STANDARDIZE = False
 
 # %%
 SOLUTION_NULL_FILLER = -999999
@@ -89,8 +90,8 @@ print(train.shape, train_labels.shape)
 print(train_labels.head())  # date_id index column
 
 # train model
+lin = Ridge()
 lin = LinearRegression()
-# lin = Ridge()
 # param_distribution = {"alpha": np.logspace(-4, 0, num=4)}
 # print(param_distribution)
 # clf = RandomizedSearchCV(lin, param_distribution, random_state=0)
@@ -106,10 +107,8 @@ Y = train_labels_processed.to_numpy()
 mu = np.mean(X, axis=0)
 std = np.std(X, axis=0)
 
-if STANDARDIZE:
-    X_std = (X - mu) / std
-else:
-    X_std = X
+X_std = (X - mu) / std
+
 # %% add the lagged targets to the dataset , and zeros where note available
 Y_lag_1 = np.concatenate(
     [
@@ -137,6 +136,14 @@ print(X_std.shape)
 # print("Best regularisation parameter :", alpha)
 # lin = Ridge(alpha=alpha)
 lin.fit(X_std, Y)
+Y_res = Y - lin.predict(X_std)
+
+tr = RandomForestRegressor(
+    criterion="friedman_mse",
+    # learning_rate=.1,
+    n_estimators=50
+)
+tr.fit(X_std, Y_res)
 
 def predict(
     test: pl.DataFrame,
@@ -172,9 +179,8 @@ def predict(
             y_lagged = np.zeros((1, test_lags.shape[1]))
         x[x == None] = np.array([mu])[x == None]
         x = x.astype(float)
-        if STANDARDIZE:
-            x = x - mu
-            x = x / std
+        x = x - mu
+        x = x / std
         x = np.concatenate(
             [
                 x,
@@ -182,7 +188,7 @@ def predict(
             ],
             axis=1
         )
-        pred = lin.predict(x) #+ tr.predict(x)
+        pred = lin.predict(x) + tr.predict(x)
         predictions = pl.DataFrame(
             {f"target_{i}": pred[0][i] for i in range(NUM_TARGET_COLUMNS)}
         )
@@ -240,3 +246,5 @@ finally:
     print("Train R2 :", r2)
     print("Train Spearman Sharpe :", spearman_sharpe)
     
+
+# %%
