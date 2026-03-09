@@ -8,8 +8,7 @@ on:
 
 concurrency:
   group:
-    ${{ github.workflow }}-${{ github.ref_name }}-${{
-    github.event.pull_request.number || github.sha }}
+    ${{ github.workflow }}-${{ github.ref_name }}-${{github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -22,8 +21,9 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
       - run: echo "Repository ${{ github.repository }} has been cloned to the runner."
-      - run: ls ${{ github.workspace }}
-      - run: echo "Job status is : ${{ job.status }}."
+      - run: |
+          ls ${{ github.workspace }}
+      - run: echo "Job status is ${{ job.status }}."
       - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:
