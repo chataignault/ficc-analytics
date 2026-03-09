@@ -18,13 +18,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 
 default_args = {
-    'owner': '___',  # TODO: Set owner name
+    'owner': 'test', 
     'depends_on_past': False,
-    'email': ['___@___.com'],  # TODO: Set email for alerts
+    'email': ['test@test.com'], 
     'email_on_failure': True,
     'email_on_retry': False,
-    'retries': ___,  # TODO: Set number of retries (e.g., 2)
-    'retry_delay': timedelta(minutes=___),  # TODO: Set retry delay (e.g., 5)
+    'retries': 1, 
+    'retry_delay': timedelta(minutes=2),
 }
 
 
@@ -66,9 +66,9 @@ def load_data(**context):
 with DAG(
     dag_id='ingestion_pipeline',
     default_args=default_args,
-    description='___',  # TODO: Add DAG description
-    schedule='___',  # TODO: Set schedule (e.g., '@daily', '0 0 * * *', None for manual)
-    start_date=datetime(___),  # TODO: Set start date (year, month, day)
+    description='',  
+    schedule='', 
+    start_date=datetime(year=2026, month=3, day=9), 
     catchup=False,  # Set to True if you want to backfill
     tags=['ingestion', 'etl'],
 ) as dag:

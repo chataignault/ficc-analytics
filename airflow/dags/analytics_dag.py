@@ -19,13 +19,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 
 default_args = {
-    'owner': '___',  # TODO: Set owner name
+    'owner': 'test', 
     'depends_on_past': False,
-    'email': ['___@___.com'],  # TODO: Set email for alerts
+    'email': ['test@test.com'], 
     'email_on_failure': True,
     'email_on_retry': False,
-    'retries': ___,  # TODO: Set number of retries (e.g., 1)
-    'retry_delay': timedelta(minutes=___),  # TODO: Set retry delay (e.g., 3)
+    'retries': 1,
+    'retry_delay': timedelta(minutes=2),
 }
 
 
@@ -99,9 +99,9 @@ def check_data_quality(**context):
 with DAG(
     dag_id='analytics_pipeline',
     default_args=default_args,
-    description='___',  # TODO: Add DAG description
-    schedule='___',  # TODO: Set schedule (e.g., '@daily', '0 6 * * *', None)
-    start_date=datetime(___),  # TODO: Set start date (year, month, day)
+    description='', 
+    schedule='', 
+    start_date=datetime(year=2026, month=3, day=12),
     catchup=False,
     tags=['analytics', 'transformation'],
 ) as dag:
