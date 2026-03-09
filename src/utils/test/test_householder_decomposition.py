@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from ..householder import householder, householder_qr
-from ..householder_extension import householder_decomposition, W_Y_from_beta_vx
+from ..transforms.householder import householder, householder_qr
+from ..transforms.householder_extension import householder_decomposition, W_Y_from_beta_vx
 
 
 @pytest.mark.parametrize("n, p", [(15, 5), (35, 10), (55, 25), (150, 55)])

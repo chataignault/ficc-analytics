@@ -1,4 +1,4 @@
-from ..pure_qr import pure_QR_eigenvalues, precond_example
+from ..transforms.pure_qr import pure_QR_eigenvalues, precond_example
 
 
 import numpy as np

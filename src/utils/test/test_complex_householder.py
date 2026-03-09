@@ -3,7 +3,7 @@ import numpy as np
 from numpy import random
 
 from .. import solve_U, householder_solve, householder_ls
-from ..householder import householder, householder_qr
+from ..transforms.householder import householder, householder_qr
 
 
 @pytest.mark.parametrize("m", [20, 40, 87])

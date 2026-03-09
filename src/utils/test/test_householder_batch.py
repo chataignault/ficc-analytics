@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ..householder_batch import householder_batch, reverse_householder_batch
+from ..transforms.householder_batch import householder_batch, reverse_householder_batch
 
 
 @pytest.mark.parametrize(
